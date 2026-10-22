@@ -1,0 +1,12 @@
+{
+  "name": "com.everest.dataforge",
+  "version": "1.0.0",
+  "displayName": "Data Forge",
+  "description": "Data management framework.",
+  "unity": "2022.3",
+  "author": {
+    "name": "quangpk"
+  },
+  "license": "MIT",
+  "documentationUrl": "http://github.com/phamkhacquang/DataForge"
+}
