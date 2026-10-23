@@ -1,8 +1,6 @@
 using System;
-using System.Collections;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace DataForge.CustomEditor {
@@ -33,12 +31,7 @@ namespace DataForge.CustomEditor {
 
         private Type GetEnumType() {
             var fieldType = fieldInfo.FieldType;
-            if (fieldType.IsArray) {
-                fieldType = fieldType.GetElementType();
-            } else if (fieldType.IsGenericType && typeof(IList).IsAssignableFrom(fieldType)) {
-                fieldType = fieldType.GenericTypeArguments[0];
-            }
-            if (fieldType.GetGenericTypeDefinition() == typeof(EnumData<,>)) {
+            if (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(EnumData<,>)) {
                 return fieldType.GenericTypeArguments[0];
             }
             throw new InvalidOperationException($"Unsupported type: {fieldInfo.FieldType}");
