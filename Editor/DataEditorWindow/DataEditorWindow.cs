@@ -45,13 +45,14 @@ namespace DataForge {
             rootVisualElement.Clear();
 
             var wrapperType = Type.GetType("GeneratedDataWrapper, Assembly-CSharp");
-            wrapper = CreateInstance(wrapperType);
-
-            fields = wrapperType.GetFields(BindingFlags.Instance | BindingFlags.Public);
-            so = new SerializedObject(wrapper);
+            if (wrapperType != null) {
+                wrapper = CreateInstance(wrapperType);
+                fields = wrapperType.GetFields(BindingFlags.Instance | BindingFlags.Public);
+                so = new SerializedObject(wrapper);
+            }
 
             VisualElement main;
-            if (fields.Length == 0) {
+            if (fields == null || fields.Length == 0) {
                 main = new VisualElement() {
                     style = { justifyContent = Justify.Center, alignItems = Align.Center }
                 };
