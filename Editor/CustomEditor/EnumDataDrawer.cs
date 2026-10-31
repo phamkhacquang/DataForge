@@ -1,40 +1,121 @@
+
 using System;
 using UnityEditor;
-using UnityEditor.UIElements;
-using UnityEngine.UIElements;
+using UnityEngine;
 
-namespace DataForge.CustomEditor {
-    [CustomPropertyDrawer(typeof(EnumData<,>))]
-    public class EnumDataDrawer : PropertyDrawer {
-        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            var root = new Foldout { text = property.displayName, value = true };
+namespace DataForge.CustomEditor
+{
+    [CustomPropertyDrawer(typeof(EnumData<,>), true)]
+    public class EnumDataDrawer : PropertyDrawer
+    {
+        private Type GetEnumType()
+        {
+            Type type = fieldInfo.FieldType;
 
-            var itemsSP = property.FindPropertyRelative("items")
-                ?? throw new InvalidOperationException($"Missing 'items' property in {property.displayName}");
-            var itemType = GetEnumType();
-            var itemValues = Enum.GetNames(itemType);
-            if (itemsSP.arraySize != itemValues.Length)
-                itemsSP.arraySize = itemValues.Length;
+            if (type.IsArray)
+                type = type.GetElementType();
 
-            property.isExpanded = true;
-
-            var container = new VisualElement();
-            for (int i = 0; i < itemValues.Length; i++) {
-                var itemProperty = itemsSP.GetArrayElementAtIndex(i);
-                container.Add(new PropertyField(itemProperty, itemValues[i]));
+            if (type.IsGenericType &&
+                type.GetGenericTypeDefinition() == typeof(EnumData<,>))
+            {
+                return type.GetGenericArguments()[0];
             }
 
-            root.Add(container);
-            root.RegisterValueChangedCallback(evt => property.isExpanded = evt.newValue);
-            return root;
+            throw new InvalidOperationException(
+                $"Unsupported type: {fieldInfo.FieldType}"
+            );
         }
 
-        private Type GetEnumType() {
-            var fieldType = fieldInfo.FieldType;
-            if (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(EnumData<,>)) {
-                return fieldType.GenericTypeArguments[0];
+        public override void OnGUI(
+            Rect position,
+            SerializedProperty property,
+            GUIContent label)
+        {
+            EditorGUI.BeginProperty(position, label, property);
+
+            var items = property.FindPropertyRelative("items");
+
+            if (items == null)
+            {
+                EditorGUI.LabelField(position, label.text, "Missing items");
+                EditorGUI.EndProperty();
+                return;
             }
-            throw new InvalidOperationException($"Unsupported type: {fieldInfo.FieldType}");
+
+            var enumNames = Enum.GetNames(GetEnumType());
+
+            if (items.arraySize != enumNames.Length)
+                items.arraySize = enumNames.Length;
+
+            property.isExpanded = EditorGUI.Foldout(
+                new Rect(
+                    position.x,
+                    position.y,
+                    position.width,
+                    EditorGUIUtility.singleLineHeight
+                ),
+                property.isExpanded,
+                label,
+                true
+            );
+
+            if (property.isExpanded)
+            {
+                EditorGUI.indentLevel++;
+
+                float y = position.y + EditorGUIUtility.singleLineHeight + 2;
+
+                for (int i = 0; i < enumNames.Length; i++)
+                {
+                    var item = items.GetArrayElementAtIndex(i);
+
+                    float height = EditorGUI.GetPropertyHeight(item, true);
+
+                    var rect = new Rect(
+                        position.x,
+                        y,
+                        position.width,
+                        height
+                    );
+
+                    EditorGUI.PropertyField(
+                        rect,
+                        item,
+                        new GUIContent(enumNames[i]),
+                        true
+                    );
+
+                    y += height + 2;
+                }
+
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUI.EndProperty();
+        }
+
+        public override float GetPropertyHeight(
+            SerializedProperty property,
+            GUIContent label)
+        {
+            float height = EditorGUIUtility.singleLineHeight;
+
+            if (!property.isExpanded)
+                return height;
+
+            var items = property.FindPropertyRelative("items");
+
+            if (items == null)
+                return height;
+
+            for (int i = 0; i < items.arraySize; i++)
+            {
+                var item = items.GetArrayElementAtIndex(i);
+
+                height += EditorGUI.GetPropertyHeight(item, true) + 2;
+            }
+
+            return height;
         }
     }
 }
